@@ -71,3 +71,7 @@ Apache License
 Version 2.0, January 2004
 
 http://www.apache.org/licenses/
+
+# Kadenze
+
+Kadenze is a creative arts MOOC working with institutions around the world to deliver affordable education in the arts.  Interested in working on problems in deep learning, signal processing, and information retrieval?  We’re always looking for great people to join our team either as interns or potentially other roles. If you are interested in working with us, contact jobs@kadenze.com.
