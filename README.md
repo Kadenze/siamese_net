@@ -1,8 +1,6 @@
 # Siamese Net
 
 ![images/prediction.png](images/prediction.png)
-![images/ds.png](images/ds.png)
-![images/embedding.png](images/embedding.png)
 
 # Introduction
 
@@ -11,6 +9,8 @@ The siamese network is a method for training a distance function discriminativel
 This package shows how to train a siamese network using Lasagne and Theano and includes network definitions for state-of-the-art networks including: DeepID, DeepID2, Chopra et. al, and Hani et. al.  We also include one pre-trained model using a custom convolutional network.
 
 We are releasing all of this to the community in the hopes that it will encourage more models to be shared and appropriated for other possible uses.  The framework we share here should allow one to train their own network, compute results, and visualize the results.  We encourage the community to explore its use, submit pull requests on any issues within the package, and to contribute pre-trained models.
+
+![images/embedding.png](images/embedding.png)
 
 # Package
 
@@ -134,9 +134,18 @@ Loading dataset...
 Preprocessing dataset
 Loading data in siamese-net/lfw
 Person: 5749/5749
+(11498, 1, 64, 64)
+Initializing Siamese Network...
+(11498, 1, 64, 64)
+
+Epoch 1 of 5 took 20.952s
+    training loss:          0.008983
+    validation loss:        0.007918
+    validation AUC:         0.64
+    validation F1:          0.69
 ```
 
-... training will begin after loading the dataset.  Each epoch can take ~ 10 minutes using these default parameters using a GeForce GT 750M GPU.
+... training will begin after downloading the dataset, pre-processing faces, and compilation (can take ~30 minutes!).  Each epoch will then take ~ 21 seconds using these default parameters using a GeForce GT 750M GPU.
 
 # References
 
@@ -184,3 +193,5 @@ http://www.apache.org/licenses/
 # Kadenze
 
 Kadenze is a creative arts MOOC working with institutions around the world to deliver affordable education in the arts.  Interested in working on problems in deep learning, signal processing, and information retrieval?  We’re always looking for great people to join our team either as interns or potentially other roles. If you are interested in working with us, contact jobs@kadenze.com.
+
+![images/ds.png](images/ds.png)
