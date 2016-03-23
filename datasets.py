@@ -1,26 +1,21 @@
 """
 Siamese Network for performing training of a Deep Convolutional
-Network for Face Verification on the Olivetti, LFW, and Kadenze
-Faces datasets.
+Network for Face Verification on the Olivetti and LFW Faces datasets.
 
-Parag K. Mital. Copyright Kadenze, Inc. 2015.
+Dependencies:
 
-Dependencies
-------------
-numpy, sklearn, scipy, theano, lasagne, pickle, cv2, dlib
+python 3.4+, numpy>=1.10.4, sklearn>=0.17, scipy>=0.17.0, theano>=0.7.0, lasagne>=0.1, cv2, dlib>=18.18 (only required if using the 'trees' crop mode).
 
 Part of the package siamese_net:
 siamese_net/
 siamese_net/faces.py
 siamese_net/datasets.py
 siamese_net/normalization.py
+siamese_net/siamese_net.py
 
-Loading Olivetti, LFW, and Kadenze Faces datasets with optional preprocessing steps.
 
 Copyright 2016 Kadenze, Inc.
-Kadenze(R) and Kannu(R) are Registered Trademarks
-of Kadenze, Inc.
-
+Kadenze(R) and Kannu(R) are Registered Trademarks of Kadenze, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 

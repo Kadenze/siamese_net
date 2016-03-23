@@ -1,25 +1,21 @@
 # -*- coding: utf-8 -*-
 """Siamese Network for performing training of a Deep Convolutional
-Network for Face Verification on the Olivetti, LFW, and Kadenze
-Faces datasets.
+Network for Face Verification on the Olivetti and LFW Faces datasets.
 
-Parag K. Mital. Copyright Kadenze, Inc. 2015.
+Dependencies:
 
-Dependencies
-------------
-numpy, sklearn, scipy, theano, lasagne, pickle, cv2, dlib
+python 3.4+, numpy>=1.10.4, sklearn>=0.17, scipy>=0.17.0, theano>=0.7.0, lasagne>=0.1, cv2, dlib>=18.18 (only required if using the 'trees' crop mode).
 
 Part of the package siamese_net:
 siamese_net/
 siamese_net/faces.py
 siamese_net/datasets.py
 siamese_net/normalization.py
+siamese_net/siamese_net.py
 
-Written in Python 3.5
 
 Copyright 2016 Kadenze, Inc.
-Kadenze(R) and Kannu(R) are Registered Trademarks
-of Kadenze, Inc.
+Kadenze(R) and Kannu(R) are Registered Trademarks of Kadenze, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
@@ -320,7 +316,7 @@ def load_pairs(
         normalization='LCN',
         split=(0.8, 0.1, 0.1),
         resolution=(128, 128),
-        crop_style='trees',
+        crop_style='none',
         crop_factor=1.2,
         n_files_per_person=5,
         path_to_data=None,
@@ -336,7 +332,7 @@ def load_pairs(
     Parameters
     ----------
     dataset -- string
-        The name of the dataset to load, 'olivetti', 'kadenze', or ['lfw'].
+        The name of the dataset to load, 'olivetti', ['lfw'].
 
     normalization -- string
         The type of normalization to apply, if any of ['LCN'], 'LCN-',
@@ -353,7 +349,7 @@ def load_pairs(
         from sklearn.datasets import fetch_olivetti_faces
         ds = fetch_olivetti_faces()
         # TODO: Apply processing options to olivetti
-    elif dataset == 'kadenze' or dataset == 'lfw':
+    elif dataset == 'lfw':
         ds = Datasets(
             crop_style=crop_style,
             crop_factor=crop_factor,
@@ -367,7 +363,7 @@ def load_pairs(
         ds = dataset
     else:
         raise ValueError(
-            'Dataset should be either olivetti, kadenze, lfw, or a dict defining images and target from get_parsed_dataset')
+            'Dataset should be either olivetti, lfw, or a dict defining images and target from get_parsed_dataset')
 
     # Split up the dataset into unique targets for train/test,
     # making sure not to repeat any subjects between train/test
@@ -1908,7 +1904,7 @@ def run_siamese_net_training(dataset,
     Parameters
     ----------
     dataset : string
-        Name of the dataset to use: 'kadenze', 'olivetti'
+        Name of the dataset to use: 'lfw', 'olivetti'
     spatial : bool
         Whether to prepent a spatial transformer network or not
     batch_size : int
@@ -2348,10 +2344,10 @@ def main(argv):
                         default=40, dest='n_out')
     parser.add_argument('-bs', '--batch_size',
                         help='Number of observations per batch.',
-                        default=200, dest='batch_size')
+                        default=100, dest='batch_size')
     parser.add_argument('-e', '--epochs',
                         help='Number of epochs to train for.',
-                        default=20, dest='n_epochs')
+                        default=5, dest='n_epochs')
     parser.add_argument('-lr', '--learning_rate',
                         help='Initial learning rate to apply to the gradient update.',
                         default=1e-4, dest='learning_rate')
@@ -2374,8 +2370,8 @@ def main(argv):
                         help='Threshold to apply to the difference in the final output layer.',
                         default=5.0, dest='hyperparameter_threshold')
     parser.add_argument('-ds', '--dataset',
-                        help='The dataset to train/test with. Choose from ["kadenze"], "lfw", or "olivetti"',
-                        default='kadenze', dest='dataset')
+                        help='The dataset to train/test with. Choose from ["lfw"], or "olivetti"',
+                        default='lfw', dest='dataset')
     parser.add_argument('-nl', '--nonlinearity',
                         help='Non-linearity to apply to convolution layers.',
                         default='rectify', dest='nonlinearity')
@@ -2389,11 +2385,11 @@ def main(argv):
                         help='Whether or not to prepend a spatial transform network',
                         default=False, dest='spatial')
     parser.add_argument('-r', '--resolution',
-                        help='Rescale images to this fixed square pixel resolution (e.g. 128 will mean images, after any crops, are rescaled to 128 x 128). ',
-                        default=100, dest='resolution')
+                        help='Rescale images to this fixed square pixel resolution (e.g. 64 will mean images, after any crops, are rescaled to 64 x 64). ',
+                        default=64, dest='resolution')
     parser.add_argument('-nf', '--num_files',
                         help='Number of files to load for each person.',
-                        default=5, dest='num_files')
+                        default=2, dest='num_files')
     parser.add_argument('-gray', '--grayscale',
                         help='Convert images to grayscale.',
                         default=True, dest='b_convert_to_grayscale')

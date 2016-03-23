@@ -6,6 +6,127 @@ This package shows how to train a siamese network using Lasagne and Theano and i
 
 We are releasing all of this to the community in the hopes that it will encourage more models to be shared and appropriated for other possible uses.  The framework we share here should allow one to train their own network, compute results, and visualize the results.  We encourage the community to explore its use, submit pull requests on any issues within the package, and to contribute pre-trained models.
 
+# Package
+
+Siamese Network for performing training of a Deep Convolutional
+Network for Face Verification on the Olivetti and LFW Faces datasets.
+
+Dependencies:
+
+python 3.4+, numpy>=1.10.4, sklearn>=0.17, scipy>=0.17.0, theano>=0.7.0, lasagne>=0.1, cv2, dlib>=18.18 (only required if using the 'trees' crop mode).
+
+Part of the package siamese_net:
+siamese_net/
+siamese_net/faces.py
+siamese_net/datasets.py
+siamese_net/normalization.py
+siamese_net/siamese_net.py
+
+Look at the notebook file `siamese_net_example.ipynb` for how to use the pre-trained model, or look at `siamese_net.py` for training your own model.  The default parameters will train a model on LFW without any face localization.
+
+```
+$ python3 siamese_net.py --help
+usage: siamese_net.py [-h] [-m MODEL_TYPE] [-of N_OUT] [-bs BATCH_SIZE]
+                      [-e N_EPOCHS] [-lr LEARNING_RATE] [-dp DROPOUT_PCT]
+                      [-norm NORMALIZATION] [-f FILENAME] [-path PATH_TO_DATA]
+                      [-hm HYPERPARAMETER_MARGIN]
+                      [-ht HYPERPARAMETER_THRESHOLD] [-ds DATASET]
+                      [-nl NONLINEARITY] [-fn DISTANCE_FN] [-cf CROP_FACTOR]
+                      [-sp SPATIAL] [-r RESOLUTION] [-nf NUM_FILES]
+                      [-gray B_CONVERT_TO_GRAYSCALE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL_TYPE, --model_type MODEL_TYPE
+                        Choose the Deep Network to use. ["hani"], "chopra", or
+                        "custom" (default: hani)
+  -of N_OUT, --output_features N_OUT
+                        Number of features in the final siamese network layer
+                        (default: 40)
+  -bs BATCH_SIZE, --batch_size BATCH_SIZE
+                        Number of observations per batch. (default: 100)
+  -e N_EPOCHS, --epochs N_EPOCHS
+                        Number of epochs to train for. (default: 5)
+  -lr LEARNING_RATE, --learning_rate LEARNING_RATE
+                        Initial learning rate to apply to the gradient update.
+                        (default: 0.0001)
+  -dp DROPOUT_PCT, --dropout_pct DROPOUT_PCT
+                        Percentage of connections to drop in between
+                        Convolutional layers. (default: 0.0)
+  -norm NORMALIZATION, --normalization NORMALIZATION
+                        Normalization of the dataset using either ["-1:1"],
+                        "LCN", "LCN-", or "ZCA". (default: -1:1)
+  -f FILENAME, --filename FILENAME
+                        Resulting pickle file to store results. If none is
+                        given, a filename is created based on the combination
+                        of all parameters. (default: None)
+  -path PATH_TO_DATA, --path_to_data PATH_TO_DATA
+                        Path to the dataset. If none is given it is assumed to
+                        be in the current working directory (default: None)
+  -hm HYPERPARAMETER_MARGIN, --hyperparameter_margin HYPERPARAMETER_MARGIN
+                        Contrastive Loss parameter describing the total free
+                        energy. (default: 2.0)
+  -ht HYPERPARAMETER_THRESHOLD, --hyperparameter_threshold HYPERPARAMETER_THRESHOLD
+                        Threshold to apply to the difference in the final
+                        output layer. (default: 5.0)
+  -ds DATASET, --dataset DATASET
+                        The dataset to train/test with. Choose from ["lfw"],
+                        or "olivetti" (default: lfw)
+  -nl NONLINEARITY, --nonlinearity NONLINEARITY
+                        Non-linearity to apply to convolution layers.
+                        (default: rectify)
+  -fn DISTANCE_FN, --distance_fn DISTANCE_FN
+                        Distance function to apply to final siamese layer.
+                        (default: l2)
+  -cf CROP_FACTOR, --cropfactor CROP_FACTOR
+                        Scale factor of amount of image around the face to
+                        use. (default: 1.0)
+  -sp SPATIAL, --spatial_transform SPATIAL
+                        Whether or not to prepend a spatial transform network
+                        (default: False)
+  -r RESOLUTION, --resolution RESOLUTION
+                        Rescale images to this fixed square pixel resolution
+                        (e.g. 64 will mean images, after any crops, are
+                        rescaled to 64 x 64). (default: 64)
+  -nf NUM_FILES, --num_files NUM_FILES
+                        Number of files to load for each person. (default: 2)
+  -gray B_CONVERT_TO_GRAYSCALE, --grayscale B_CONVERT_TO_GRAYSCALE
+                        Convert images to grayscale. (default: True)
+```
+
+Example output of training w/ default parameters:
+
+```
+$ python3 siamese_net.py
+Namespace(b_convert_to_grayscale=True, batch_size=100, crop_factor=1.0, dataset='lfw', distance_fn='l2', dropout_pct=0.0, filename=None, hyperparameter_margin=2.0, hyperparameter_threshold=5.0, learning_rate=0.0001, model_type='hani', n_epochs=5, n_out=40, nonlinearity='rectify', normalization='-1:1', num_files=2, path_to_data=None, resolution=64, spatial=False)
+Dataset: lfw
+Spatial: 0
+Batch Size: 100
+Num Features: 40
+Model Type: hani
+Num Epochs: 5
+Num Files: 2
+Learning Rate: 0.000100
+Normalization: -1:1
+Crop Factor: 1
+Resolution: 64
+Hyperparameter Margin: 2.000000
+Hyperparameter Threshold: 5.000000
+Dropout Percent: 0.000000
+Non-Linearity: rectify
+Grayscale: 1
+Distance Function: l2
+
+Writing results to: results/dataset_lfw_transform_0_batch_100_lr_0.000100_model_hani_epochs_5_normalization_-1:1_cropfactor_1.00_nout_40_resolution_64_numfiles_2_q_2.00_t_5.00_d_0.00_nonlinearity_rectify_distancefn_l2_grayscale_1.pkl
+
+Loading dataset...
+Preprocessing dataset
+Loading data in siamese-net/lfw
+Person: 5749/5749
+```
+
+... training will begin after loading the dataset.  Each epoch can take ~ 10 minutes using these default parameters using a GeForce GT 750M GPU.
+
 # References
 
 Chopra, S., Hadsell, R., & Y., L. (2005). Learning a similiarty metric discriminatively, with application to face verification. Proceedings of IEEE Conference on Computer Vision and Pattern Recognition, 349–356.
@@ -32,29 +153,11 @@ Wheeler, F. W., Liu, X., & Tu, P. H. (2007). Multi-Frame Super-Resolution for Fa
 
 Yi, D., Lei, Z., Liao, S., & Li, S. Z. (2014). Learning Face Representation from Scratch. arXiv.
 
-# Package
-
-Siamese Network for performing training of a Deep Convolutional
-Network for Face Verification on the Olivetti, LFW, and Kadenze
-Faces datasets.
-
-Parag K. Mital. Copyright Kadenze, Inc. 2015.
-
-Dependencies
-------------
-numpy, sklearn, scipy, theano, lasagne, pickle, cv2, dlib
-
-Part of the package siamese_net:
-siamese_net/
-siamese_net/faces.py
-siamese_net/datasets.py
-siamese_net/normalization.py
-
 # License
 
+Parag K. Mital
 Copyright 2016 Kadenze, Inc.
-Kadenze(R) and Kannu(R) are Registered Trademarks
-of Kadenze, Inc.
+Kadenze(R) and Kannu(R) are Registered Trademarks of Kadenze, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
