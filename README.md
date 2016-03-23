@@ -32,11 +32,38 @@ Wheeler, F. W., Liu, X., & Tu, P. H. (2007). Multi-Frame Super-Resolution for Fa
 
 Yi, D., Lei, Z., Liao, S., & Li, S. Z. (2014). Learning Face Representation from Scratch. arXiv.
 
+# Package
+
+Siamese Network for performing training of a Deep Convolutional
+Network for Face Verification on the Olivetti, LFW, and Kadenze
+Faces datasets.
+
+Parag K. Mital. Copyright Kadenze, Inc. 2015.
+
+Dependencies
+------------
+numpy, sklearn, scipy, theano, lasagne, pickle, cv2, dlib
+
+Part of the package siamese_net:
+siamese_net/
+siamese_net/faces.py
+siamese_net/datasets.py
+siamese_net/normalization.py
+
 # License
 
 Copyright 2016 Kadenze, Inc.
+Kadenze(R) and Kannu(R) are Registered Trademarks
+of Kadenze, Inc.
+
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
 http://www.apache.org/licenses/LICENSE-2.0
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+Apache License
+
+Version 2.0, January 2004
+
+http://www.apache.org/licenses/
