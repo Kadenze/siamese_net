@@ -250,7 +250,7 @@ def make_image_pair_idxs(y, unique_labels):
     # Iterate over all imposter pairs of people
     # (32 choose 2 = 496 people pairs. 496 * 10 * 10 image pairs = 49600 imposter pairs)
     # (157 * 0.4 = 63), 63 choose 2 = 1953, 1953 * 100 = 195300
-    for pair in combinations(unique_labels, 2):
+    for pair_i, pair in enumerate(combinations(unique_labels, 2)):
         # Find images of those people
         im1_idx = np.where(pair[0] == y)[0]
         im2_idx = np.where(pair[1] == y)[0]
@@ -411,10 +411,13 @@ def load_pairs(
     if b_load_idxs_only:
         # Make pairs of actual and imposter faces, returning the indexes to
         # create them
+        print('train')
         X_train_matched, y_train_matched, X_train_unmatched, y_train_unmatched = make_image_pair_idxs(
             y, unique_train_labels)
+        print('valid')
         X_valid_matched, y_valid_matched, X_valid_unmatched, y_valid_unmatched = make_image_pair_idxs(
             y, unique_valid_labels)
+        print('test')
         X_test_matched, y_test_matched, X_test_unmatched, y_test_unmatched = make_image_pair_idxs(
             y, unique_test_labels)
 
@@ -675,6 +678,7 @@ class SiameseNetPredictor(object):
         """Summary"""
         # Load the pretrained model
         self.result = pickle.load(open(filename, 'rb'))
+        print(self.result['params'])
         self.grayscale = self.result['params']['b_convert_to_grayscale']
         self.normalization = self.result['params']['normalization']
         self.net = ConvSiameseNet(
@@ -742,6 +746,8 @@ class SiameseNetPredictor(object):
             zca = ZCA(bias=0.1)
             zca.fit(X)
             self.norm = zca
+        elif self.normalization == '-1:1':
+            self.norm = lambda x: ((x - np.min(x)) / (np.max(x) - np.min(x)) * 2.0 - 1.0)
 
     def preprocess(self, X):
         '''Take an image in X, and transform it with local contrast normalization.
@@ -756,7 +762,13 @@ class SiameseNetPredictor(object):
         img : numpy.ndarray
             Local contrast normalized image
         '''
-        return self.norm.transform(X)
+        res = None
+        try:
+            res = self.norm.transform(X)
+        except:
+            res = self.norm(X)
+            pass
+        return res
 
     def features_for_layer(self, X, layer_num):
         if layer_num in self.fns.keys():
@@ -966,7 +978,7 @@ class ConvSiameseNet:
 
         self.weight_init = lasagne.init.Normal(std=0.05, mean=0.0)
 
-    def use_hani_model(self, dropout_pct=0.5, b_spatial=False):
+    def use_hani_model(self, dropout_pct=0.0, b_spatial=False):
         """Summary
 
         Parameters
@@ -982,7 +994,7 @@ class ConvSiameseNet:
             Description
         """
         self.model = self.get_hani_2014_net(
-            self.l_in, dropout_pct=0.5, b_spatial=b_spatial)
+            self.l_in, dropout_pct=dropout_pct, b_spatial=b_spatial)
 
     def use_custom_model(self, b_spatial=False):
         """Summary
@@ -999,7 +1011,7 @@ class ConvSiameseNet:
         """
         self.model = self.get_custom_net(self.l_in, b_spatial=b_spatial)
 
-    def use_chopra_model(self, dropout_pct=0.5, b_spatial=False):
+    def use_chopra_model(self, dropout_pct=0.0, b_spatial=False):
         """Summary
 
         Parameters
@@ -1015,7 +1027,7 @@ class ConvSiameseNet:
             Description
         """
         self.model = self.get_chopra_net(
-            self.l_in, dropout_pct=0.5, b_spatial=b_spatial)
+            self.l_in, dropout_pct=dropout_pct, b_spatial=b_spatial)
 
     def use_deepid_model(self, b_spatial=False):
         """Summary
@@ -1093,7 +1105,7 @@ class ConvSiameseNet:
               transformed_input_layer.output_shape)
         return transformed_input_layer
 
-    def get_chopra_net(self, input_layer, dropout_pct=0.5, b_spatial=False):
+    def get_chopra_net(self, input_layer, dropout_pct=0.0, b_spatial=False):
         '''Return a lasagne network defining the siamese network
         Chopra, S., Hadsell, R., & Y., L. (2005). Learning a similiarty
         metric discriminatively, with application to face verification.
@@ -1641,13 +1653,13 @@ class ConvSiameseNet:
         return train_model, validate_model, test_model
 
     def get_evaluation_model(self):
-        """Return a theano function allowing you to directly compute 
+        """Return a theano function allowing you to directly compute
         the siamese net features.
 
         Returns
         -------
         fn : theano.function
-            The theano function which expects the input layer and returns the 
+            The theano function which expects the input layer and returns the
             siamese net features.  Does not require pairs (e.g. N can = 1).
         """
         y_pred = lasagne.layers.get_output(
@@ -1656,7 +1668,7 @@ class ConvSiameseNet:
         return fn
 
     def retrieve_parameters(self):
-        """Get stored parameters from the theano model.  
+        """Get stored parameters from the theano model.
         This function can be used in conjunction with set_from_parameters to save
         and restore model parameters.
 
@@ -1668,7 +1680,7 @@ class ConvSiameseNet:
         return lasagne.layers.get_all_param_values(self.model)
 
     def set_from_parameters(self, parameters):
-        """Set the stored parameters of the internal theano model.  
+        """Set the stored parameters of the internal theano model.
         This function can be used in conjunction with retrieve_parameters to save
         and restore model parameters.
 
@@ -1682,7 +1694,7 @@ class ConvSiameseNet:
         lasagne.layers.set_all_param_values(self.model, parameters)
 
     def load_model(self, filename='model.pkl'):
-        """Set the stored parameters of the internal theano model.  
+        """Set the stored parameters of the internal theano model.
         This function can be used in conjunction with save_model to save
         and restore model parameters.
 
@@ -1695,7 +1707,7 @@ class ConvSiameseNet:
         lasagne.layers.set_all_param_values(self.model, params)
 
     def save_model(self, filename='model.pkl'):
-        """Get stored parameters from the theano model and store in the given filename.  
+        """Get stored parameters from the theano model and store in the given filename.
         This function can be used in conjunction with load_model to save
         and restore model parameters.
 
@@ -1717,10 +1729,10 @@ class ConvSiameseNet:
 def distance_L2(x):
     """L2 distance for the Siamese architecture.
 
-    Batches should be fed in pairs of images which the loss 
+    Batches should be fed in pairs of images which the loss
     helps to optimize the distance of.  This is the siamese part of the architecture
-    which fakes having two networks and just uses the batch's dimension to help 
-    define the parallel networks. 
+    which fakes having two networks and just uses the batch's dimension to help
+    define the parallel networks.
 
     Parameters
     ----------
@@ -1740,10 +1752,10 @@ def distance_L2(x):
 def distance_L1(x):
     """L1 distance for the Siamese architecture.
 
-    Batches should be fed in pairs of images which the loss 
+    Batches should be fed in pairs of images which the loss
     helps to optimize the distance of.  This is the siamese part of the architecture
-    which fakes having two networks and just uses the batch's dimension to help 
-    define the parallel networks. 
+    which fakes having two networks and just uses the batch's dimension to help
+    define the parallel networks.
 
     Parameters
     ----------
@@ -1779,10 +1791,10 @@ def l2norm(x):
 def distance_cosine(x, e=1e-6):
     """Cosine distance for the Siamese architecture.
 
-    Batches should be fed in pairs of images which the loss 
+    Batches should be fed in pairs of images which the loss
     helps to optimize the distance of.  This is the siamese part of the architecture
-    which fakes having two networks and just uses the batch's dimension to help 
-    define the parallel networks.  
+    which fakes having two networks and just uses the batch's dimension to help
+    define the parallel networks.
 
     Parameters
     ----------
@@ -1815,12 +1827,12 @@ def distance_cosine(x, e=1e-6):
 
 
 def contrastive_loss(y_pred, y_true, margin=20.0):
-    """Contrastive loss for the Siamese Architecture.  
+    """Contrastive loss for the Siamese Architecture.
 
-    Batches should be fed in pairs of images which the loss helps to optimize 
+    Batches should be fed in pairs of images which the loss helps to optimize
     the distance of.  This is the siamese part of the architecture which fakes
     having two networks and just uses the batch's dimension to help define the
-    parallel networks.  
+    parallel networks.
 
     Parameters
     ----------
@@ -1891,7 +1903,6 @@ def run_siamese_net_training(dataset,
                              crop_factor,
                              hyperparameter_margin,
                              hyperparameter_threshold,
-                             dropout_pct,
                              nonlinearity,
                              distance_fn,
                              b_convert_to_grayscale,
@@ -1924,8 +1935,8 @@ def run_siamese_net_training(dataset,
     resolution : int
         Image resolution to scale to (square pixels only)
     crop_factor : float
-        Factor to scale bounds of the detected face.  
-        1.0 means the face is tightly cropped, 
+        Factor to scale bounds of the detected face.
+        1.0 means the face is tightly cropped,
         < 1.0, the face is cropped even tighter
         > 1.0, more of the outside of the face is included.
     hyperparameter_margin : float
@@ -1933,9 +1944,6 @@ def run_siamese_net_training(dataset,
     hyperparameter_threshold : float
         Threshold to apply to L1 norm of final output layers defining
         whether faces match or not
-    dropout_pct : float
-        Percentage of connections dropped in between convolutional
-        layers
     nonlinearity : string
         "rectify" or "scaled_tanh"
     distance_fn : string
@@ -1970,7 +1978,6 @@ def run_siamese_net_training(dataset,
                        '_numfiles_%d' % num_files +
                        '_q_%2.02f' % hyperparameter_margin +
                        '_t_%2.02f' % hyperparameter_threshold +
-                       '_d_%1.02f' % dropout_pct +
                        '_nonlinearity_%s' % nonlinearity +
                        '_distancefn_%s' % distance_fn +
                        '_grayscale_%d.pkl' % b_convert_to_grayscale)
@@ -2002,11 +2009,10 @@ def run_siamese_net_training(dataset,
         \rNum Files: %d
         \rLearning Rate: %f
         \rNormalization: %s
-        \rCrop Factor: %d
+        \rCrop Factor: %f
         \rResolution: %d
         \rHyperparameter Margin: %f
         \rHyperparameter Threshold: %f
-        \rDropout Percent: %f
         \rNon-Linearity: %s
         \rGrayscale: %d
         \rDistance Function: %s\n
@@ -2023,7 +2029,6 @@ def run_siamese_net_training(dataset,
                                          resolution,
                                          hyperparameter_margin,
                                          hyperparameter_threshold,
-                                         dropout_pct,
                                          nonlinearity,
                                          int(b_convert_to_grayscale),
                                          distance_fn,
@@ -2067,12 +2072,12 @@ def run_siamese_net_training(dataset,
                                distance_fn=distance_fn)
 
         if model_type == 'hani':
-            model.use_hani_model(dropout_pct=dropout_pct, b_spatial=spatial)
+            model.use_hani_model(dropout_pct=0.0, b_spatial=spatial)
         elif model_type == 'custom':
             model.use_custom_model(b_spatial=spatial)
         elif model_type == 'chopra':
             model.use_chopra_model(
-                dropout_pct=dropout_pct, b_spatial=spatial)
+                dropout_pct=0.0, b_spatial=spatial)
         elif model_type == 'deepid':
             model.use_deepid_model(b_spatial=spatial)
         else:
@@ -2105,7 +2110,6 @@ def run_siamese_net_training(dataset,
                 'resolution': (resolution, resolution),
                 'hyperparameter_margin': hyperparameter_margin,
                 'hyperparameter_threshold': hyperparameter_threshold,
-                'dropout_pct': dropout_pct,
                 'nonlinearity': nonlinearity,
                 'distance_fn': distance_fn,
                 'b_convert_to_grayscale': b_convert_to_grayscale
@@ -2242,8 +2246,6 @@ def run_siamese_net_training(dataset,
         results['model_parameters'] = pickle.dumps(model.retrieve_parameters())
 
         pickle.dump(results, open(filename, 'wb'))
-        os.system(
-            'aws s3 sync results s3://research.kad.com/research/siamese-net/grid-search/')
         epoch = epoch + 1
 
     # Now train a logistic regression classifer which will use the
@@ -2351,9 +2353,6 @@ def main(argv):
     parser.add_argument('-lr', '--learning_rate',
                         help='Initial learning rate to apply to the gradient update.',
                         default=1e-4, dest='learning_rate')
-    parser.add_argument('-dp', '--dropout_pct',
-                        help='Percentage of connections to drop in between Convolutional layers.',
-                        default=0.0, dest='dropout_pct')
     parser.add_argument('-norm', '--normalization',
                         help='Normalization of the dataset using either ["-1:1"], "LCN", "LCN-", or "ZCA".',
                         default='-1:1', dest='normalization')
@@ -2410,13 +2409,12 @@ def main(argv):
                              normalization=args.normalization,
                              nonlinearity=args.nonlinearity,
                              distance_fn=args.distance_fn,
-                             b_convert_to_grayscale=bool(
+                             b_convert_to_grayscale=int(
                                  args.b_convert_to_grayscale),
                              hyperparameter_margin=float(
                                  args.hyperparameter_margin),
                              hyperparameter_threshold=float(
                                  args.hyperparameter_threshold),
-                             dropout_pct=float(args.dropout_pct),
                              path_to_data=args.path_to_data,
                              filename=args.filename)
 

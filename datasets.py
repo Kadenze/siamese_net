@@ -32,6 +32,7 @@ import pickle
 import os
 import numpy as np
 import scipy as sp
+from scipy import misc
 import cv2
 from bson.binary import Binary
 
@@ -63,10 +64,10 @@ def scale_crop(x, y, w, h, img_w, img_h, crop_factor=1.0):
     x, y, w, h : float, float, float, float
         Scaled bounding box
     '''
-    w = w - (x - crop_factor * x) * 2
-    h = h - (y - crop_factor * y) * 2
-    x = x + x - crop_factor * x
-    y = y + y - crop_factor * y
+    x = x + w // 2 - w // 2 * crop_factor
+    y = y + h // 2 - h // 2 * crop_factor
+    w = w * crop_factor
+    h = h * crop_factor
 
     if (x + w) > img_w:
         x -= ((x + w) - img_w)
@@ -76,8 +77,6 @@ def scale_crop(x, y, w, h, img_w, img_h, crop_factor=1.0):
     x = np.clip(x, 0, img_w - w)
     y = np.clip(y, 0, img_h - h)
 
-    # w = np.clip(w, 0, img_w)
-    # h = np.clip(h, 0, img_h)
     return x, y, w, h
 
 
@@ -129,14 +128,14 @@ class Datasets(object):
 
     def __init__(self,
                  path_to_data=None,
-                 n_min_files_per_person=None,
-                 n_files_per_person=None,
+                 n_min_files_per_person=5,
+                 n_files_per_person=2,
                  b_convert_to_grayscale=False,
                  crop_style='none',
-                 crop_factor=1.0,
+                 crop_factor=0.75,
                  resolution=(64, 64),
                  b_convert_img_to_serializable=False,
-                 b_augment_w_flips=True,
+                 b_augment_w_flips=False,
                  b_augment_w_affine=True,
                  area_threshold=1.0,
                  similar_img_threshold=0.1):
@@ -200,7 +199,7 @@ class Datasets(object):
         self.bCropToHaar = 'haar' in self.crop_style
         self.b_augment_w_flips = b_augment_w_flips
         self.b_augment_w_affine = b_augment_w_affine
-        self.n_warps = 20
+        self.n_warps = self.n_files_per_person
         self.area_threshold = area_threshold
 
         if crop_style == 'haar':
@@ -437,12 +436,12 @@ class Datasets(object):
         return ds
 
     def _get_one_level_deep(self, path_to_data, token1='', token2='.jpg'):
-        '''Return the unparsed original LFW dataset as a listof dictionaries 
+        '''Return the unparsed original LFW dataset as a listof dictionaries
         defining `X`, the image, `y` the label as a numeric integer unique to
-        each person, `str_y`, the path of the person's image data, `shape` 
+        each person, `str_y`, the path of the person's image data, `shape`
         the size of the image, and `filename`, the original file's name.
 
-        Note this function could be used to load any dataset that is 
+        Note this function could be used to load any dataset that is
         similarly structured:
         e.g.:
 
@@ -606,18 +605,18 @@ class Datasets(object):
         file_i - string
             The filename of the image
         label_i - string
-            The directory containing the image, or something unique to the 
+            The directory containing the image, or something unique to the
             person in the image
         pathToFile - string
             The full path to the filename
         ds - list of dictionaries
             The dataset of images added so far; used for computing
-            similarity threshold.  Set to None if not computing 
+            similarity threshold.  Set to None if not computing
             similarity to other images.
         '''
 
         # First process the crop
-        img = sp.misc.imread(os.path.join(pathToFile, file_i)).astype(np.uint8)
+        img = misc.imread(os.path.join(pathToFile, file_i)).astype(np.uint8)
 
         gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         x, y, w, h = None, None, None, None
@@ -651,40 +650,27 @@ class Datasets(object):
                 w = s * 2
                 h = s * 2
         elif self.crop_style == 'none':
-            pass
+            x, y, w, h = [0, 0, img.shape[1], img.shape[0]]
         else:
             raise ValueError(
                 'Unknown crop style.  Known options: ["trees"], "hog+clm", "haar+clm", "hog", and "haar"')
 
-        if x is not None:
-            # test whether the detected image is above the area threshold
-            if (w * h) / (img.shape[0] * img.shape[1]) >= self.area_threshold:
-                print('rejecting')
-                return None
-            # Scale the crop and apply it to the grayscale image
-            x, y, w, h = scale_crop(
-                x, y, w, h,
-                gray_img.shape[1], gray_img.shape[0],
-                self.crop_factor)
-            if self.b_convert_to_grayscale:
-                crop = gray_img[y:y + h, x:x + w]
-                img = sp.misc.imresize(crop, self.resolution)[np.newaxis, ...]
-            else:
-                crop = img[y:y + h, x:x + w, ...]
-                img = np.rollaxis(
-                    sp.misc.imresize(crop, self.resolution),
-                    -1)[np.newaxis, ...]
+        # test whether the detected image is above the area threshold
+        if (w * h) / (img.shape[0] * img.shape[1]) > self.area_threshold:
+            return None
+        # Scale the crop and apply it to the grayscale image
+        x, y, w, h = scale_crop(
+            x, y, w, h,
+            gray_img.shape[1], gray_img.shape[0],
+            self.crop_factor)
+        if self.b_convert_to_grayscale:
+            crop = gray_img[y:y + h, x:x + w]
+            img = misc.imresize(crop, self.resolution)[np.newaxis, ...]
         else:
-            # Didn't require crop
-            img = sp.misc.imresize(
-                sp.misc.imread(os.path.join(pathToFile, file_i),
-                               flatten=self.b_convert_to_grayscale),
-                self.resolution
-            )
-            if not self.b_convert_to_grayscale:
-                img = np.rollaxis(img, -1)
-            img = img[np.newaxis, ...]
-
+            crop = img[y:y + h, x:x + w, ...]
+            img = np.rollaxis(
+                misc.imresize(crop, self.resolution),
+                -1)[np.newaxis, ...]
         if np.max(img) > 0:
             if ds is not None and self.similar_img_threshold > 0:
                 # check all other images with the same label
